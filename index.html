@@ -217,6 +217,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);box-shadow:0 0 0 
       <span>Seus dados foram restaurados automaticamente (último salvamento: <strong id="restore-time"></strong>)</span>
       <button onclick="document.getElementById('restore-banner').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:var(--grnd)">✕</button>
     </div>
+    <!-- Banner de primeiro acesso -->
+    <div id="first-banner" style="display:none;background:var(--blul);border:1px solid #BFDBFE;border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--blu)">
+      <div style="font-weight:700;margin-bottom:6px">👋 Bem-vindo ao Financeiro Polo Caçapava!</div>
+      <div style="margin-bottom:8px">Seus dados são salvos automaticamente neste navegador. Para usar em outro computador, use <strong>💾 Dados → Backup JSON</strong>.</div>
+      <button onclick="document.getElementById('first-banner').style.display='none'"
+        class="btn btq btn-sm">Entendi ✓</button>
+    </div>
 
   <!-- DASHBOARD -->
   <div id="sec-dashboard" class="sec on">
@@ -1702,16 +1709,34 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('logo').src=LOGO;
 
   // ── Carrega dados salvos no navegador (se existirem) ──────────────────────
-  const savedAt = loadLocal();
-  if(savedAt){
-    const d = new Date(savedAt);
+  const saveInfo = loadLocal();
+  if(saveInfo){
+    const d = new Date(saveInfo.saved_at||saveInfo);
     const str = d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    // Mostra banner de dados restaurados
     const banner = document.getElementById('restore-banner');
     if(banner){
       banner.style.display='flex';
-      document.getElementById('restore-time').textContent = str;
+      if(saveInfo._updated){
+        // Sistema atualizado — mostra mensagem especial
+        document.getElementById('restore-time').textContent = str;
+        document.getElementById('restore-banner').style.background='var(--grnl)';
+        document.getElementById('restore-banner').innerHTML=`
+          <span>🎉</span>
+          <div>
+            <strong>Sistema atualizado!</strong> Seus dados foram preservados automaticamente
+            (último salvamento: ${str}).
+          </div>
+          <button onclick="this.closest('#restore-banner').style.display='none'"
+            style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:var(--grnd)">✕</button>`;
+      } else {
+        document.getElementById('restore-time').textContent = str;
+      }
     }
+  } else {
+    // Primeira vez — salva a versão atual e mostra boas-vindas
+    localStorage.setItem(VERSION_KEY, APP_VERSION);
+    const fb = document.getElementById('first-banner');
+    if(fb) fb.style.display = 'block';
   }
 
   initDash(); initFC();
@@ -2356,6 +2381,8 @@ ctab=function(id,el){
 // ══════════════════════════════════════════════════════════════════════════════
 
 const STORAGE_KEY = 'anhanguera_polo_v1';
+const APP_VERSION = '3.2'; // Atualize este número a cada nova versão
+const VERSION_KEY = 'anhanguera_version';
 const STORAGE_RULES_KEY = 'anhanguera_rules_v1';
 let _autoSaveTimer = null;
 let _lastSaveTime = null;
@@ -2399,7 +2426,14 @@ function loadLocal(){
     if(d.orc)                   Object.assign(ORC, d.orc);
     console.log(`✓ Dados carregados do navegador (salvo em ${d.saved_at})`);
     _lastSaveTime = new Date(d.saved_at);
-    return d.saved_at;
+    // Detecta se houve atualização do sistema
+    const prevVersion = localStorage.getItem(VERSION_KEY);
+    if(prevVersion && prevVersion !== APP_VERSION){
+      d._updated = true;
+      d._prevVersion = prevVersion;
+    }
+    localStorage.setItem(VERSION_KEY, APP_VERSION);
+    return d;
   } catch(e) {
     console.error('Erro ao carregar dados locais:', e);
     return false;
