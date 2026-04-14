@@ -576,7 +576,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);box-shadow:0 0 0 
 
 <!-- CONTA A PAGAR -->
 <div class="ov" id="m-cp">
-  <div class="mdl">
+  <div class="mdl" style="width:620px">
     <div class="mh"><h3 id="mc-t">Nova Conta a Pagar</h3><button class="mx" onclick="closeM('m-cp')">✕</button></div>
     <div class="mc">
       <div class="fr">
@@ -586,29 +586,101 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);box-shadow:0 0 0 
       <div class="fr f1"><div class="fg2"><label>Descrição *</label><input type="text" id="cpde"></div></div>
       <div class="fr">
         <div class="fg2"><label>Categoria</label><select id="cpca"></select></div>
-        <div class="fg2"><label>Conta Bancária</label><select id="cpba"><option>Bradesco</option><option>Inter</option><option>Sicoob</option><option>Dinheiro</option></select></div>
-      </div>
-      <div class="dvd"></div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px">
-        <input type="checkbox" id="cpck" onchange="togCP()"> Registrar Pagamento
-      </label>
-      <div id="cp-pw" style="display:none">
-        <div class="fr">
-          <div class="fg2"><label>Data do Pagamento *</label><input type="date" id="cppd"></div>
-          <div class="fg2"><label>Tipo</label>
-            <select id="cppt"><option value="pg">Pago</option><option value="ag">Agendado (futuro)</option></select></div>
+        <div class="fg2"><label>Conta Bancária</label>
+          <select id="cpba"><option>Bradesco</option><option>Inter</option><option>Sicoob</option><option>Dinheiro</option></select>
         </div>
-        <div class="fr f1"><div class="fg2"><label>Observação</label><input type="text" id="cpob" placeholder="Pix, Boleto, Débito automático..."></div></div>
-        <div style="background:var(--blul);border:1px solid #BFDBFE;border-radius:8px;padding:9px 13px;font-size:12px;color:var(--blu);margin-top:2px">
-          ℹ️ Um lançamento será criado automaticamente no Fluxo de Caixa.
+      </div>
+
+      <!-- RECORRÊNCIA / PARCELAMENTO -->
+      <div class="dvd"></div>
+      <div style="margin-bottom:12px">
+        <div class="fg2" style="margin-bottom:8px"><label>Tipo de Lançamento</label></div>
+        <div class="seg" id="seg-cp" style="max-width:420px">
+          <button class="sgb on" data-cp="unico" onclick="setCPTipo(this)">📌 Único</button>
+          <button class="sgb" data-cp="recorrente" onclick="setCPTipo(this)">🔁 Recorrente</button>
+          <button class="sgb" data-cp="parcelado" onclick="setCPTipo(this)">🔢 Parcelado</button>
+        </div>
+      </div>
+
+      <!-- Painel Recorrente -->
+      <div id="cp-rec-wrap" style="display:none;background:var(--g7);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--g3);margin-bottom:10px">🔁 Configurar Recorrência</div>
+        <div class="fr">
+          <div class="fg2"><label>Repetir a cada</label>
+            <select id="cp-rec-freq">
+              <option value="1m">1 mês (mensal)</option>
+              <option value="2m">2 meses (bimestral)</option>
+              <option value="3m">3 meses (trimestral)</option>
+              <option value="6m">6 meses (semestral)</option>
+              <option value="12m">12 meses (anual)</option>
+              <option value="1s">1 semana</option>
+              <option value="2s">2 semanas</option>
+            </select>
+          </div>
+          <div class="fg2"><label>Repetir por quantos meses?</label>
+            <select id="cp-rec-dur">
+              <option value="3">3 meses</option>
+              <option value="6">6 meses</option>
+              <option value="12" selected>12 meses</option>
+              <option value="24">24 meses</option>
+              <option value="999">Indeterminado (até cancelar)</option>
+            </select>
+          </div>
+        </div>
+        <div id="cp-rec-preview" style="font-size:12px;color:var(--g4);margin-top:6px"></div>
+        <div style="background:var(--ambl);border:1px solid #FCD34D;border-radius:7px;padding:8px 12px;font-size:12px;color:var(--amb);margin-top:8px">
+          ⚠️ Serão criadas múltiplas contas a pagar nas datas calculadas. Você poderá excluir individualmente depois.
+        </div>
+      </div>
+
+      <!-- Painel Parcelado -->
+      <div id="cp-parc-wrap" style="display:none;background:var(--g7);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--g3);margin-bottom:10px">🔢 Configurar Parcelamento</div>
+        <div class="fr">
+          <div class="fg2"><label>Nº de Parcelas *</label>
+            <input type="number" id="cp-parc-n" min="2" max="60" value="12" oninput="updateParcPreview()">
+          </div>
+          <div class="fg2"><label>Tipo de valor</label>
+            <select id="cp-parc-tipo" onchange="updateParcPreview()">
+              <option value="total">Valor total (dividir entre parcelas)</option>
+              <option value="parc">Valor de cada parcela</option>
+            </select>
+          </div>
+        </div>
+        <div id="cp-parc-preview" style="font-size:12px;color:var(--g4);margin-top:6px"></div>
+        <div style="background:var(--blul);border:1px solid #BFDBFE;border-radius:7px;padding:8px 12px;font-size:12px;color:var(--blu);margin-top:8px">
+          ℹ️ Cada parcela terá a descrição com "(1/12)", "(2/12)", etc. O vencimento é sempre no mesmo dia do mês.
+        </div>
+      </div>
+
+      <!-- Registrar Pagamento (só para lançamento único) -->
+      <div id="cp-pgto-section">
+        <div class="dvd"></div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px">
+          <input type="checkbox" id="cpck" onchange="togCP()"> Registrar Pagamento
+        </label>
+        <div id="cp-pw" style="display:none">
+          <div class="fr">
+            <div class="fg2"><label>Data do Pagamento *</label><input type="date" id="cppd"></div>
+            <div class="fg2"><label>Tipo</label>
+              <select id="cppt"><option value="pg">Pago</option><option value="ag">Agendado (futuro)</option></select>
+            </div>
+          </div>
+          <div class="fr f1"><div class="fg2"><label>Observação</label>
+            <input type="text" id="cpob" placeholder="Pix, Boleto, Débito automático...">
+          </div></div>
+          <div style="background:var(--blul);border:1px solid #BFDBFE;border-radius:8px;padding:9px 13px;font-size:12px;color:var(--blu);margin-top:2px">
+            ℹ️ Um lançamento será criado automaticamente no Fluxo de Caixa.
+          </div>
         </div>
       </div>
     </div>
     <div class="mf">
       <button class="btn btq" onclick="closeM('m-cp')">Cancelar</button>
-      <button class="btn bto" onclick="saveCP()">Salvar</button>
+      <button class="btn bto" id="cp-save-btn" onclick="saveCP()">Salvar</button>
     </div>
     <input type="hidden" id="cpid">
+    <input type="hidden" id="cp-tipo-lanc" value="unico">
   </div>
 </div>
 
@@ -1155,9 +1227,9 @@ function rcp(){
       <td><span class="bx ${bc}">${bx}</span></td>
       <td>${sub}${obs}</td>
       <td style="display:flex;gap:3px">
-        <button class="bic" onclick="openCP(${c.id})">✏️</button>
+        <button class="bic" onclick="openCP(${c.id})" title="Editar">✏️</button>
         ${!p?`<button class="bic" style="background:var(--grnl);color:var(--grnd)" title="Pagar" onclick="pgRapido(${c.id})">💰</button>`:''}
-      </td></tr>`;
+        <button class="bic" style="color:var(--red)" title="Excluir" onclick="delCP(${c.id})">🗑</button>     </td></tr>`;
   }).join('');
 }
 
@@ -2554,6 +2626,230 @@ document.addEventListener('click',e=>{
   if(menu&&btn&&!btn.contains(e.target)&&!menu.contains(e.target))
     menu.style.display='none';
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONTAS A PAGAR — EXCLUSÃO, RECORRÊNCIA E PARCELAMENTO
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── EXCLUIR CONTA ─────────────────────────────────────────────────────────────
+function delCP(id){
+  const c = CP.find(x=>x.id===id);
+  if(!c) return;
+  // Verifica se tem grupo (recorrente/parcelado)
+  const grupo = c.grupo_id;
+  if(grupo){
+    const irmãos = CP.filter(x=>x.grupo_id===grupo);
+    const pendentes = irmãos.filter(x=>!x.pago||x.pago==='nan'||x.pago==='');
+    const opcoes = pendentes.length > 1
+      ? `\n\n1 — Excluir só esta (${D(c.data)})\n2 — Excluir esta e as próximas (${pendentes.length} pendentes)\n3 — Excluir todas do grupo (${irmãos.length} no total)`
+      : '';
+    if(opcoes){
+      const escolha = prompt(`Esta conta faz parte de um grupo (${c.grupo_tipo==='recorrente'?'recorrente':'parcelado'}).${opcoes}\n\nDigite 1, 2 ou 3:`);
+      if(!escolha) return;
+      if(escolha==='1'){
+        CP = CP.filter(x=>x.id!==id);
+        // Remove lançamento vinculado se existir
+        L = L.filter(l=>l.cp_id!==id);
+      } else if(escolha==='2'){
+        const hoje = new Date().toISOString().slice(0,10);
+        const remover = irmãos.filter(x=>(x.id===id||x.data>=c.data)&&(!x.pago||x.pago==='nan'||x.pago===''));
+        remover.forEach(x=>{ CP=CP.filter(c=>c.id!==x.id); L=L.filter(l=>l.cp_id!==x.id); });
+        toast(`${remover.length} contas excluídas`,'ok');
+      } else if(escolha==='3'){
+        irmãos.forEach(x=>{ CP=CP.filter(c=>c.id!==x.id); L=L.filter(l=>l.cp_id!==x.id); });
+        toast(`${irmãos.length} contas do grupo excluídas`,'ok');
+      } else { toast('Opção inválida','e'); return; }
+    } else {
+      if(!confirm(`Excluir "${c.descricao}"?`)) return;
+      CP = CP.filter(x=>x.id!==id);
+      L  = L.filter(l=>l.cp_id!==id);
+    }
+  } else {
+    if(!confirm(`Excluir "${c.descricao}"?\n\nSe houver lançamento vinculado no Fluxo de Caixa, ele também será removido.`)) return;
+    CP = CP.filter(x=>x.id!==id);
+    L  = L.filter(l=>l.cp_id!==id);
+    toast('Conta excluída','ok');
+  }
+  scheduleAutoSave();
+  rcp();
+}
+
+// ── TIPO DE LANÇAMENTO (segmented control) ────────────────────────────────────
+function setCPTipo(btn){
+  document.querySelectorAll('#seg-cp .sgb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const tipo = btn.dataset.cp;
+  document.getElementById('cp-tipo-lanc').value = tipo;
+  document.getElementById('cp-rec-wrap').style.display  = tipo==='recorrente'?'block':'none';
+  document.getElementById('cp-parc-wrap').style.display = tipo==='parcelado' ?'block':'none';
+  document.getElementById('cp-pgto-section').style.display = tipo==='unico'  ?'block':'none';
+  // Atualiza texto do botão salvar
+  const btn2 = document.getElementById('cp-save-btn');
+  if(tipo==='recorrente') btn2.textContent = '🔁 Criar Recorrências';
+  else if(tipo==='parcelado') btn2.textContent = '🔢 Criar Parcelas';
+  else btn2.textContent = 'Salvar';
+  updateRecPreview();
+  updateParcPreview();
+}
+
+// ── PREVIEW RECORRÊNCIA ───────────────────────────────────────────────────────
+function updateRecPreview(){
+  const dataBase = document.getElementById('cpd').value;
+  const freq     = document.getElementById('cp-rec-freq')?.value || '1m';
+  const dur      = parseInt(document.getElementById('cp-rec-dur')?.value) || 12;
+  if(!dataBase) return;
+  const datas = calcRecDatas(dataBase, freq, Math.min(dur,24));
+  const el = document.getElementById('cp-rec-preview');
+  if(!el) return;
+  const show = datas.slice(0,4).map(d=>D(d)).join(', ');
+  const extra = datas.length>4 ? ` ... até ${D(datas[datas.length-1])}` : '';
+  el.textContent = `📅 ${datas.length} vencimentos: ${show}${extra}`;
+}
+
+function calcRecDatas(dataBase, freq, qtd){
+  const datas = [];
+  let d = new Date(dataBase + 'T12:00:00');
+  for(let i=0; i<qtd && i<999; i++){
+    if(i>0){
+      if(freq.endsWith('m')) d.setMonth(d.getMonth() + parseInt(freq));
+      else if(freq.endsWith('s')) d.setDate(d.getDate() + parseInt(freq)*7);
+    }
+    datas.push(d.toISOString().slice(0,10));
+    if(qtd===999 && i>=23) break; // limita preview indeterminado
+  }
+  return datas;
+}
+
+// ── PREVIEW PARCELAMENTO ──────────────────────────────────────────────────────
+function updateParcPreview(){
+  const val  = parseFloat(document.getElementById('cpv')?.value) || 0;
+  const n    = parseInt(document.getElementById('cp-parc-n')?.value) || 2;
+  const tipo = document.getElementById('cp-parc-tipo')?.value || 'total';
+  const el   = document.getElementById('cp-parc-preview');
+  if(!el) return;
+  if(val<=0){ el.textContent='Informe o valor para ver o preview'; return; }
+  const valParc = tipo==='total' ? val/n : val;
+  const valTotal = tipo==='parc' ? val*n : val;
+  el.textContent = `💰 ${n}x de ${R(valParc)} = Total: ${R(valTotal)}`;
+}
+
+// ── PATCH openCP para resetar o segmented control ─────────────────────────────
+const _origOpenCP = openCP;
+openCP = function(id){
+  _origOpenCP(id);
+  // Edição: mostra só único (recorrente/parcelado não editam o grupo)
+  document.querySelectorAll('#seg-cp .sgb').forEach(b=>b.classList.remove('on'));
+  document.querySelector('#seg-cp .sgb[data-cp="unico"]').classList.add('on');
+  document.getElementById('cp-tipo-lanc').value='unico';
+  document.getElementById('cp-rec-wrap').style.display='none';
+  document.getElementById('cp-parc-wrap').style.display='none';
+  document.getElementById('cp-pgto-section').style.display='block';
+  document.getElementById('cp-save-btn').textContent='Salvar';
+  // Esconde segmented control em edição
+  const seg = document.getElementById('seg-cp');
+  if(id && seg) seg.closest('div').style.display='none';
+  if(!id && seg) seg.closest('div').style.display='block';
+};
+
+// Atualiza preview ao mudar data/valor
+document.addEventListener('input', e=>{
+  if(['cpd','cp-rec-freq','cp-rec-dur'].includes(e.target.id)) updateRecPreview();
+  if(['cpv','cp-parc-n','cp-parc-tipo'].includes(e.target.id)) updateParcPreview();
+});
+
+// ── PATCH saveCP para suportar recorrência e parcelamento ─────────────────────
+const _origSaveCP = saveCP;
+saveCP = function(){
+  const tipo = document.getElementById('cp-tipo-lanc').value;
+
+  if(tipo==='recorrente'){
+    const data  = document.getElementById('cpd').value;
+    const val   = parseFloat(document.getElementById('cpv').value)||0;
+    const desc  = document.getElementById('cpde').value.trim();
+    const cat   = document.getElementById('cpca').value;
+    const banco = document.getElementById('cpba').value;
+    const freq  = document.getElementById('cp-rec-freq').value;
+    const dur   = parseInt(document.getElementById('cp-rec-dur').value)||12;
+    if(!data||!desc||val<=0){toast('Preencha data, descrição e valor!','e');return}
+    const datas = calcRecDatas(data, freq, dur===999?24:dur);
+    const grupoId = 'rec_'+Date.now();
+    let count = 0;
+    datas.forEach((d,i)=>{
+      CP.push({
+        id:nid(CP)+i, data:d, descricao:desc, conta:cat, banco, valor:val,
+        pago:'', data_pago:'', tipo_pago:'', obs:'',
+        grupo_id:grupoId, grupo_tipo:'recorrente',
+        grupo_indice:i+1, grupo_total:datas.length
+      });
+      count++;
+    });
+    CP.sort((a,b)=>a.data.localeCompare(b.data));
+    closeM('m-cp');
+    scheduleAutoSave();
+    toast(`✅ ${count} vencimentos criados!`,'s');
+    rcp();
+    return;
+  }
+
+  if(tipo==='parcelado'){
+    const data   = document.getElementById('cpd').value;
+    const val    = parseFloat(document.getElementById('cpv').value)||0;
+    const desc   = document.getElementById('cpde').value.trim();
+    const cat    = document.getElementById('cpca').value;
+    const banco  = document.getElementById('cpba').value;
+    const n      = parseInt(document.getElementById('cp-parc-n').value)||2;
+    const tpVal  = document.getElementById('cp-parc-tipo').value;
+    if(!data||!desc||val<=0){toast('Preencha data, descrição e valor!','e');return}
+    const valParc = tpVal==='total' ? +(val/n).toFixed(2) : val;
+    // Ajuste de centavos na última parcela
+    const totalCalc = +(valParc*(n-1)).toFixed(2);
+    const valUlt = tpVal==='total' ? +(val-totalCalc).toFixed(2) : valParc;
+    const grupoId = 'parc_'+Date.now();
+    const datas = calcRecDatas(data, '1m', n);
+    datas.forEach((d,i)=>{
+      const valorParc = i===n-1 ? valUlt : valParc;
+      CP.push({
+        id:nid(CP)+i, data:d,
+        descricao:`${desc} (${i+1}/${n})`,
+        conta:cat, banco, valor:valorParc,
+        pago:'', data_pago:'', tipo_pago:'', obs:'',
+        grupo_id:grupoId, grupo_tipo:'parcelado',
+        grupo_indice:i+1, grupo_total:n
+      });
+    });
+    CP.sort((a,b)=>a.data.localeCompare(b.data));
+    closeM('m-cp');
+    scheduleAutoSave();
+    toast(`✅ ${n} parcelas criadas (${R(valParc)}/mês)!`,'s');
+    rcp();
+    return;
+  }
+
+  // Único: chama o original
+  _origSaveCP();
+};
+
+// ── MELHORAR rcp para mostrar badge de recorrente/parcelado ───────────────────
+const _origRcp = rcp;
+rcp = function(){
+  _origRcp();
+  // Adiciona badges de grupo nas linhas
+  document.querySelectorAll('#cp-b tr').forEach((tr,i)=>{
+    // Pega o id da conta desta linha pelo botão editar
+    const editBtn = tr.querySelector('[onclick^="openCP"]');
+    if(!editBtn) return;
+    const m = editBtn.getAttribute('onclick').match(/openCP\((\d+)\)/);
+    if(!m) return;
+    const c = CP.find(x=>x.id===+m[1]);
+    if(!c?.grupo_id) return;
+    const descCell = tr.querySelector('td:nth-child(2)');
+    if(!descCell) return;
+    const badge = c.grupo_tipo==='recorrente'
+      ? `<span style="font-size:10px;background:#E0E7FF;color:#3730A3;padding:1px 5px;border-radius:3px;margin-left:5px">🔁 ${c.grupo_indice}/${c.grupo_total}</span>`
+      : `<span style="font-size:10px;background:#FEF9C3;color:#713F12;padding:1px 5px;border-radius:3px;margin-left:5px">🔢 ${c.grupo_indice}/${c.grupo_total}</span>`;
+    descCell.innerHTML += badge;
+  });
+};
 
 </script>
 </body></html>
