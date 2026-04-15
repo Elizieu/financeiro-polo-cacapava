@@ -1332,7 +1332,7 @@ function openCP(id){
   document.getElementById('cpck').checked=p;
   document.getElementById('cp-pw').style.display=p?'block':'none';
   document.getElementById('cppd').value=c?.data_pago||'';
-  document.getElementById('cppt').value=c?.tipo_pago||'pg';
+  // tipo_pago now auto-detected from date
   document.getElementById('cpob').value=(c?.obs&&c.obs!=='nan')?c.obs:'';
   openM('m-cp');
 }
@@ -2804,16 +2804,19 @@ function delCP(id){
 
 // ── TIPO DE LANÇAMENTO (segmented control) ────────────────────────────────────
 function setCPTipo(el){
-  // Suporte a card div ou botão sgb
+  // Garante que pegamos o card pai, mesmo se clicar no texto interno
+  const card = el.closest('.cp-card')||el;
   document.querySelectorAll('.cp-card').forEach(c=>{
     c.style.border='2px solid var(--bd)';
     c.style.background='var(--wh)';
-    c.querySelector('div:nth-child(2)').style.color='var(--g2)';
+    const lbl=c.querySelector('div:nth-child(2)');
+    if(lbl) lbl.style.color='var(--g2)';
   });
-  el.style.border='2px solid var(--or)';
-  el.style.background='var(--orl)';
-  el.querySelector('div:nth-child(2)').style.color='var(--ord)';
-  const tipo = el.dataset.cp;
+  card.style.border='2px solid var(--or)';
+  card.style.background='var(--orl)';
+  const lbl=card.querySelector('div:nth-child(2)');
+  if(lbl) lbl.style.color='var(--ord)';
+  const tipo = card.dataset.cp;
   document.getElementById('cp-tipo-lanc').value = tipo;
   document.getElementById('cp-rec-wrap').style.display   = tipo==='recorrente'?'block':'none';
   document.getElementById('cp-parc-wrap').style.display  = tipo==='parcelado' ?'block':'none';
@@ -3041,169 +3044,6 @@ rcp = function(){
     descCell.innerHTML += badge;
   });
 };
-
-// ── CX FIX: Formatação e UX dos campos de valor ──────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{
-  // Remove field-error ao digitar
-  document.querySelectorAll('input,select').forEach(el=>{
-    el.addEventListener('input',()=>el.classList.remove('field-error'));
-    el.addEventListener('change',()=>el.classList.remove('field-error'));
-  });
-  // Focus automático no primeiro campo ao abrir modal
-  document.querySelectorAll('.ov').forEach(ov=>{
-    const obs=new MutationObserver(()=>{
-      if(ov.classList.contains('on')){
-        setTimeout(()=>{
-          const first=ov.querySelector('input:not([type=hidden]):not([type=checkbox]),select');
-          if(first)first.focus();
-        },80);
-      }
-    });
-    obs.observe(ov,{attributes:true,attributeFilter:['class']});
-  });
-});
-
-// ── CX FIX: Contador de itens na sidebar com badge ───────────────────────────
-function updateSidebarBadges(){
-  const hoje=new Date().toISOString().slice(0,10);
-  // Contas vencidas ou a vencer em 7 dias
-  const h=h0(),e7=new Date(h);e7.setDate(h.getDate()+7);
-  const urgente=CP.filter(c=>{
-    const pg=c.pago&&c.pago!=='nan'&&c.pago!=='';if(pg)return false;
-    const d=c.data?new Date(c.data):null;if(!d)return false;d.setHours(0,0,0,0);
-    return d<=e7;
-  }).length;
-  // Badge contas
-  let cpBadge=document.getElementById('cp-badge');
-  if(!cpBadge){
-    const cpBtn=document.querySelector('.ni[onclick*="contas"]');
-    if(cpBtn){cpBadge=document.createElement('span');cpBadge.id='cp-badge';
-      cpBadge.style.cssText='margin-left:auto;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:17px;text-align:center';
-      cpBtn.appendChild(cpBadge);}
-  }
-  if(cpBadge){
-    cpBadge.textContent=urgente||'';
-    cpBadge.style.display=urgente>0?'inline':'none';
-    cpBadge.style.background=urgente>0?'var(--red)':'transparent';
-    cpBadge.style.color='#fff';
-  }
-  // NF pendentes badge
-  const nfPend=NF.filter(n=>!n.data_recebimento&&!n.cancelada).length;
-  let nfBadge=document.getElementById('nf-badge');
-  if(!nfBadge){
-    const nfBtn=document.querySelector('.ni[onclick*="\'nf\'"]');
-    if(nfBtn){nfBadge=document.createElement('span');nfBadge.id='nf-badge';
-      nfBadge.style.cssText='margin-left:auto;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:17px;text-align:center;background:var(--amb);color:#fff';
-      nfBtn.appendChild(nfBadge);}
-  }
-  if(nfBadge){nfBadge.textContent=nfPend||'';nfBadge.style.display=nfPend>0?'inline':'none'}
-}
-
-// ── CX FIX: Breadcrumb / título dinâmico da página ───────────────────────────
-const _origGo=go;
-go=function(id,el){
-  _origGo(id,el);
-  updateSidebarBadges();
-  // Scroll to top ao trocar de seção
-  window.scrollTo({top:0,behavior:'smooth'});
-};
-
-// ── CX FIX: Confirmar antes de sair se há alterações não salvas ───────────────
-// (já existe beforeunload — mantido)
-
-// ── CX FIX: Atalhos de teclado globais ───────────────────────────────────────
-document.addEventListener('keydown',e=>{
-  // Ctrl+N = Novo Lançamento
-  if((e.ctrlKey||e.metaKey)&&e.key==='n'&&!document.querySelector('.ov.on')){
-    e.preventDefault();openLanc(null);
-  }
-  // Ctrl+S = Salvar agora
-  if((e.ctrlKey||e.metaKey)&&e.key==='s'){
-    e.preventDefault();saveLocal();toast('Salvo!','s');
-  }
-  // Ctrl+E = Exportar Excel
-  if((e.ctrlKey||e.metaKey)&&e.key==='e'&&!document.querySelector('.ov.on')){
-    e.preventDefault();xls();
-  }
-});
-
-// ── CX FIX: Empty states informativos nas tabelas ────────────────────────────
-function emptyState(msg,icon='📭',action='',actionLabel=''){
-  return`<tr><td colspan="20" style="padding:40px 20px;text-align:center;color:var(--g4)">
-    <div style="font-size:36px;margin-bottom:8px;opacity:.4">${icon}</div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:4px">${msg}</div>
-    ${action?`<button class="btn bto btn-sm" onclick="${action}" style="margin-top:10px">${actionLabel}</button>`:''}
-  </td></tr>`;
-}
-
-// Patch rfcp para empty state
-const _origRfcp=rfcp;
-rfcp=function(){
-  _origRfcp();
-  if(!fcf.length){
-    document.getElementById('fc-b').innerHTML=emptyState(
-      'Nenhum lançamento encontrado','💸',
-      "document.getElementById('fb').value='';rfc()",
-      'Limpar filtros'
-    );
-  }
-};
-
-// Patch rcp para empty state
-const _origRcp2=rcp;
-rcp=function(){
-  _origRcp2();
-  if(!document.getElementById('cp-b').querySelector('tr')){
-    document.getElementById('cp-b').innerHTML=emptyState(
-      'Nenhuma conta encontrada para este período','📋',
-      "abrirNovaContaPagar()",
-      '＋ Nova Conta'
-    );
-  }
-};
-
-// ── CX FIX: Tooltips nos botões de ação das tabelas ───────────────────────────
-// (já tem title="" nos bic buttons — ok)
-
-// ── CX FIX: Highlight na linha ao passar o mouse (já tem tr:hover no CSS) ────
-
-// ── CX FIX: Formato de moeda nos inputs de valor ─────────────────────────────
-function setupCurrencyInputs(){
-  const valInputs=['lva','cpv','nval','nrv','cat-orc'];
-  valInputs.forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    el.setAttribute('placeholder','0,00');
-    el.addEventListener('keypress',e=>{
-      // Permite: números, vírgula, ponto, backspace, tab, setas
-      if(!/[\d,.\-]/.test(e.key)&&e.key!=='Backspace'&&e.key!=='Tab')
-        e.preventDefault();
-    });
-  });
-}
-
-// ── CX FIX: Paginação do Fluxo de Caixa — mostra range e total ───────────────
-const _origRfcp2=rfcp;
-// (sobrescrita já feita acima — ok)
-
-// ── CX FIX: Foco automático na busca ao entrar em seções com tabela ──────────
-const _origGo2=go;
-go=function(id,el){
-  _origGo2(id,el);
-  const focusMap={fluxo:'fb',contas:'cb',forn:'fbu',nf:'nf-mes'};
-  const fid=focusMap[id];
-  if(fid)setTimeout(()=>{const f=document.getElementById(fid);if(f)f.focus()},200);
-};
-
-// ── CX FIX: Atualiza badges ao init ──────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{
-  setTimeout(updateSidebarBadges, 500);
-  setupCurrencyInputs();
-  // Dica de atalhos no rodapé da sidebar
-  const ft=document.querySelector('.sb-ft');
-  if(ft)ft.innerHTML='v3.2 · Polo Caçapava · 2026<br><span style="font-size:10px;opacity:.5">Ctrl+N novo · Ctrl+S salvar · ESC fechar</span>';
-});
-
 function acFornCP(inp){
   const q=inp.value.trim().toLowerCase();
   const drop=document.getElementById('ac-drop-cp');
@@ -3282,5 +3122,8 @@ function aplicarEdicaoGrupo(idOrigem, changes, escolha){
   });
 }
 
+
+// Alias para compatibilidade
+function abrirNovaContaPagar(){ openCP(null); }
 </script>
 </body></html>
