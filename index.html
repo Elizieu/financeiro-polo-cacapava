@@ -591,14 +591,34 @@ input.field-error~.field-error-msg{display:block}
 
 <!-- CONTA A PAGAR -->
 <div class="ov" id="m-cp">
-  <div class="mdl" style="width:620px">
-    <div class="mh"><h3 id="mc-t">Nova Conta a Pagar</h3><button class="mx" onclick="closeM('m-cp')">✕</button></div>
-    <div class="mc">
+  <div class="mdl" style="width:640px">
+    <div class="mh">
+      <h3 id="mc-t">Nova Conta a Pagar</h3>
+      <button class="mx" onclick="closeM('m-cp')">✕</button>
+    </div>
+    <div class="mc" style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Linha 1: Data + Valor -->
       <div class="fr">
-        <div class="fg2"><label>Data de Vencimento *</label><input type="date" id="cpd"></div>
-        <div class="fg2"><label>Valor (R$) *</label><input type="number" id="cpv" min="0" step="0.01"></div>
+        <div class="fg2"><label>Data de Vencimento *</label><input type="date" id="cpd" oninput="updateRecPreview()"></div>
+        <div class="fg2"><label>Valor (R$) *</label><input type="number" id="cpv" min="0" step="0.01" oninput="updateParcPreview()"></div>
       </div>
-      <div class="fr f1"><div class="fg2"><label>Descrição *</label><input type="text" id="cpde"></div></div>
+
+      <!-- Linha 2: Descrição -->
+      <div class="fg2"><label>Descrição *</label><input type="text" id="cpde"></div>
+
+      <!-- Linha 3: Fornecedor com autocomplete -->
+      <div class="fg2">
+        <label>Fornecedor / Pagador</label>
+        <div style="position:relative">
+          <input type="text" id="cp-forn" autocomplete="off" placeholder="Digite para buscar ou deixe em branco..."
+            oninput="acFornCP(this)" onfocus="acFornCP(this)"
+            onblur="setTimeout(()=>{const d=document.getElementById('ac-drop-cp');if(d)d.style.display='none'},200)">
+          <div id="ac-drop-cp" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--wh);border:1px solid var(--bd);border-radius:8px;box-shadow:var(--sha);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        </div>
+      </div>
+
+      <!-- Linha 4: Categoria + Conta -->
       <div class="fr">
         <div class="fg2"><label>Categoria</label><select id="cpca"></select></div>
         <div class="fg2"><label>Conta Bancária</label>
@@ -606,90 +626,108 @@ input.field-error~.field-error-msg{display:block}
         </div>
       </div>
 
-      <!-- RECORRÊNCIA / PARCELAMENTO -->
-      <div class="dvd"></div>
-      <div style="margin-bottom:12px">
+      <!-- Tipo de Lançamento — cards horizontais clean -->
+      <div>
         <div class="fg2" style="margin-bottom:8px"><label>Tipo de Lançamento</label></div>
-        <div class="seg" id="seg-cp" style="max-width:420px">
-          <button class="sgb on" data-cp="unico" onclick="setCPTipo(this)">📌 Único</button>
-          <button class="sgb" data-cp="recorrente" onclick="setCPTipo(this)">🔁 Recorrente</button>
-          <button class="sgb" data-cp="parcelado" onclick="setCPTipo(this)">🔢 Parcelado</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="cp-tipo-cards">
+          <div class="cp-card on" data-cp="unico" onclick="setCPTipo(this)"
+            style="border:2px solid var(--or);background:var(--orl);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s">
+            <div style="font-size:18px;margin-bottom:4px">📌</div>
+            <div style="font-size:13px;font-weight:700;color:var(--ord)">Único</div>
+            <div style="font-size:11px;color:var(--g4);margin-top:2px">Um vencimento só</div>
+          </div>
+          <div class="cp-card" data-cp="recorrente" onclick="setCPTipo(this)"
+            style="border:2px solid var(--bd);background:var(--wh);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s">
+            <div style="font-size:18px;margin-bottom:4px">🔁</div>
+            <div style="font-size:13px;font-weight:700;color:var(--g2)">Recorrente</div>
+            <div style="font-size:11px;color:var(--g4);margin-top:2px">Aluguel, assinaturas...</div>
+          </div>
+          <div class="cp-card" data-cp="parcelado" onclick="setCPTipo(this)"
+            style="border:2px solid var(--bd);background:var(--wh);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s">
+            <div style="font-size:18px;margin-bottom:4px">🔢</div>
+            <div style="font-size:13px;font-weight:700;color:var(--g2)">Parcelado</div>
+            <div style="font-size:11px;color:var(--g4);margin-top:2px">Compra em parcelas</div>
+          </div>
         </div>
       </div>
 
       <!-- Painel Recorrente -->
-      <div id="cp-rec-wrap" style="display:none;background:var(--g7);border-radius:10px;padding:14px;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--g3);margin-bottom:10px">🔁 Configurar Recorrência</div>
+      <div id="cp-rec-wrap" style="display:none;background:var(--g7);border:1px solid var(--bd);border-radius:10px;padding:14px">
         <div class="fr">
           <div class="fg2"><label>Repetir a cada</label>
-            <select id="cp-rec-freq">
-              <option value="1m">1 mês (mensal)</option>
-              <option value="2m">2 meses (bimestral)</option>
-              <option value="3m">3 meses (trimestral)</option>
-              <option value="6m">6 meses (semestral)</option>
-              <option value="12m">12 meses (anual)</option>
-              <option value="1s">1 semana</option>
-              <option value="2s">2 semanas</option>
+            <select id="cp-rec-freq" onchange="updateRecPreview()">
+              <option value="1m">Mensal (todo mês)</option>
+              <option value="2m">Bimestral (2 meses)</option>
+              <option value="3m">Trimestral (3 meses)</option>
+              <option value="6m">Semestral (6 meses)</option>
+              <option value="12m">Anual (12 meses)</option>
+              <option value="1s">Semanal</option>
+              <option value="2s">Quinzenal</option>
             </select>
           </div>
-          <div class="fg2"><label>Repetir por quantos meses?</label>
-            <select id="cp-rec-dur">
+          <div class="fg2"><label>Por quanto tempo</label>
+            <select id="cp-rec-dur" onchange="updateRecPreview()">
               <option value="3">3 meses</option>
               <option value="6">6 meses</option>
               <option value="12" selected>12 meses</option>
               <option value="24">24 meses</option>
-              <option value="999">Indeterminado (até cancelar)</option>
+              <option value="999">Sem prazo definido</option>
             </select>
           </div>
         </div>
-        <div id="cp-rec-preview" style="font-size:12px;color:var(--g4);margin-top:6px"></div>
-        <div style="background:var(--ambl);border:1px solid #FCD34D;border-radius:7px;padding:8px 12px;font-size:12px;color:var(--amb);margin-top:8px">
-          ⚠️ Serão criadas múltiplas contas a pagar nas datas calculadas. Você poderá excluir individualmente depois.
-        </div>
+        <div id="cp-rec-preview" style="font-size:12px;color:var(--g3);margin-top:8px;padding:8px 10px;background:var(--wh);border-radius:7px;border:1px solid var(--bd)"></div>
       </div>
 
       <!-- Painel Parcelado -->
-      <div id="cp-parc-wrap" style="display:none;background:var(--g7);border-radius:10px;padding:14px;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--g3);margin-bottom:10px">🔢 Configurar Parcelamento</div>
+      <div id="cp-parc-wrap" style="display:none;background:var(--g7);border:1px solid var(--bd);border-radius:10px;padding:14px">
         <div class="fr">
-          <div class="fg2"><label>Nº de Parcelas *</label>
+          <div class="fg2"><label>Número de Parcelas *</label>
             <input type="number" id="cp-parc-n" min="2" max="60" value="12" oninput="updateParcPreview()">
           </div>
-          <div class="fg2"><label>Tipo de valor</label>
+          <div class="fg2"><label>O valor informado é</label>
             <select id="cp-parc-tipo" onchange="updateParcPreview()">
-              <option value="total">Valor total (dividir entre parcelas)</option>
+              <option value="total">Total (será dividido)</option>
               <option value="parc">Valor de cada parcela</option>
             </select>
           </div>
         </div>
-        <div id="cp-parc-preview" style="font-size:12px;color:var(--g4);margin-top:6px"></div>
-        <div style="background:var(--blul);border:1px solid #BFDBFE;border-radius:7px;padding:8px 12px;font-size:12px;color:var(--blu);margin-top:8px">
-          ℹ️ Cada parcela terá a descrição com "(1/12)", "(2/12)", etc. O vencimento é sempre no mesmo dia do mês.
-        </div>
+        <div id="cp-parc-preview" style="font-size:12px;color:var(--g3);margin-top:8px;padding:8px 10px;background:var(--wh);border-radius:7px;border:1px solid var(--bd)"></div>
       </div>
 
-      <!-- Registrar Pagamento (só para lançamento único) -->
+      <!-- Registrar Pagamento -->
       <div id="cp-pgto-section">
-        <div class="dvd"></div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px">
-          <input type="checkbox" id="cpck" onchange="togCP()"> Registrar Pagamento
-        </label>
-        <div id="cp-pw" style="display:none">
-          <div class="fr">
-            <div class="fg2"><label>Data do Pagamento *</label><input type="date" id="cppd"></div>
-            <div class="fg2"><label>Tipo</label>
-              <select id="cppt"><option value="pg">Pago</option><option value="ag">Agendado (futuro)</option></select>
+        <div style="height:1px;background:var(--bd)"></div>
+        <div style="margin-top:14px">
+          <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+            <input type="checkbox" id="cpck" onchange="togCP()" style="width:17px;height:17px;accent-color:var(--or)">
+            <span style="font-size:13px;font-weight:600">Registrar Pagamento</span>
+          </label>
+        </div>
+        <div id="cp-pw" style="display:none;margin-top:12px;background:var(--g7);border:1px solid var(--bd);border-radius:10px;padding:14px">
+          <div class="fr" style="margin-bottom:10px">
+            <div class="fg2">
+              <label>Data do Pagamento *</label>
+              <input type="date" id="cppd" oninput="detectPgtoTipo()">
+            </div>
+            <div class="fg2">
+              <label>Status</label>
+              <!-- Badge dinâmico — atualizado pelo detectPgtoTipo() -->
+              <div id="cp-pgto-badge" style="display:flex;align-items:center;height:36px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:600;background:var(--grnl);color:var(--grnd);border:1px solid #6EE7B7;gap:6px">
+                <span>✓</span><span id="cp-pgto-badge-txt">Pago hoje</span>
+              </div>
             </div>
           </div>
-          <div class="fr f1"><div class="fg2"><label>Observação</label>
-            <input type="text" id="cpob" placeholder="Pix, Boleto, Débito automático...">
-          </div></div>
-          <div style="background:var(--blul);border:1px solid #BFDBFE;border-radius:8px;padding:9px 13px;font-size:12px;color:var(--blu);margin-top:2px">
+          <div class="fg2" style="margin-bottom:10px">
+            <label>Observação <span style="font-size:11px;color:var(--g4);font-weight:400">(opcional — Pix, Boleto, Débito automático...)</span></label>
+            <input type="text" id="cpob" placeholder="Ex: Pix 53.xxx, Boleto venc. 25/04...">
+          </div>
+          <div id="cp-pgto-info" style="font-size:12px;color:var(--blu);background:var(--blul);border:1px solid #BFDBFE;border-radius:7px;padding:8px 12px">
             ℹ️ Um lançamento será criado automaticamente no Fluxo de Caixa.
           </div>
         </div>
       </div>
-    </div>
+
+    </div><!-- /mc -->
     <div class="mf">
       <button class="btn btq" onclick="closeM('m-cp')">Cancelar</button>
       <button class="btn bto" id="cp-save-btn" onclick="saveCP()">Salvar</button>
@@ -1310,6 +1348,44 @@ function togCP(){
   const on=document.getElementById('cpck').checked;
   document.getElementById('cp-pw').style.display=on?'block':'none';
   if(on&&!document.getElementById('cppd').value)document.getElementById('cppd').value=iso();
+  // Auto-fill pix from supplier
+  if(on) autoFillPix();
+  detectPgtoTipo();
+}
+
+function detectPgtoTipo(){
+  const dt = document.getElementById('cppd').value;
+  const badge = document.getElementById('cp-pgto-badge');
+  const badgeTxt = document.getElementById('cp-pgto-badge-txt');
+  const info = document.getElementById('cp-pgto-info');
+  if(!dt||!badge) return;
+  const hoje = iso();
+  const futuro = dt > hoje;
+  const diasDiff = Math.ceil((new Date(dt+' 12:00')-new Date(hoje+' 12:00'))/(864e5));
+  if(futuro){
+    badge.style.background='var(--blul)';badge.style.color='var(--blu)';badge.style.borderColor='#93C5FD';
+    badge.querySelector('span').textContent='🗓';
+    const label = diasDiff===1?'Amanhã':diasDiff<=7?`Em ${diasDiff} dias`:dt.split('-').reverse().join('/');
+    badgeTxt.textContent = `Agendado — ${label}`;
+    info.innerHTML='🗓 Será registrado como <strong>pagamento agendado</strong>. No Fluxo de Caixa aparecerá na data escolhida.';
+    info.style.color='var(--blu)';info.style.background='var(--blul)';info.style.borderColor='#BFDBFE';
+  } else {
+    badge.style.background='var(--grnl)';badge.style.color='var(--grnd)';badge.style.borderColor='#6EE7B7';
+    badge.querySelector('span').textContent='✓';
+    badgeTxt.textContent = dt===hoje?'Pago hoje':'Pago em '+dt.split('-').reverse().join('/');
+    info.innerHTML='ℹ️ Um lançamento será criado automaticamente no Fluxo de Caixa.';
+    info.style.color='var(--blu)';info.style.background='var(--blul)';info.style.borderColor='#BFDBFE';
+  }
+}
+
+function autoFillPix(){
+  const fornNome = document.getElementById('cp-forn')?.value?.trim();
+  if(!fornNome) return;
+  const fn = FN.find(f=>f.nome.toLowerCase()===fornNome.toLowerCase());
+  if(fn?.pix){
+    const obs = document.getElementById('cpob');
+    if(obs&&!obs.value) obs.value = `Pix: ${fn.pix}`;
+  }
 }
 
 function saveCP(){
@@ -1318,9 +1394,13 @@ function saveCP(){
   if(!data||!desc||val<=0){toast('Preencha data, descrição e valor!','e');return}
   const id=parseInt(document.getElementById('cpid').value)||0;
   const p=document.getElementById('cpck').checked, pd=document.getElementById('cppd').value;
-  const tp=document.getElementById('cppt').value, obs=document.getElementById('cpob').value;
+  // Auto-detect: if payment date is future, it's scheduled
+  const tp = p && pd ? (pd > iso() ? 'ag' : 'pg') : '';
+  const obs=document.getElementById('cpob').value;
+  const forn=(document.getElementById('cp-forn')?.value||'').trim();
   const obj={id:id||nid(CP),data,descricao:desc,
     conta:document.getElementById('cpca').value, banco:document.getElementById('cpba').value,
+    fornecedor:forn,
     valor:val, pago:p?(tp==='ag'?'agendado':'ok'):'', data_pago:p?pd:'', tipo_pago:tp, obs};
   if(id){const i=CP.findIndex(c=>c.id===id);if(i>=0)CP[i]=obj}else CP.push(obj);
   // Criar lançamento no fluxo se tem pagamento
@@ -2723,15 +2803,21 @@ function delCP(id){
 }
 
 // ── TIPO DE LANÇAMENTO (segmented control) ────────────────────────────────────
-function setCPTipo(btn){
-  document.querySelectorAll('#seg-cp .sgb').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  const tipo = btn.dataset.cp;
+function setCPTipo(el){
+  // Suporte a card div ou botão sgb
+  document.querySelectorAll('.cp-card').forEach(c=>{
+    c.style.border='2px solid var(--bd)';
+    c.style.background='var(--wh)';
+    c.querySelector('div:nth-child(2)').style.color='var(--g2)';
+  });
+  el.style.border='2px solid var(--or)';
+  el.style.background='var(--orl)';
+  el.querySelector('div:nth-child(2)').style.color='var(--ord)';
+  const tipo = el.dataset.cp;
   document.getElementById('cp-tipo-lanc').value = tipo;
-  document.getElementById('cp-rec-wrap').style.display  = tipo==='recorrente'?'block':'none';
-  document.getElementById('cp-parc-wrap').style.display = tipo==='parcelado' ?'block':'none';
-  document.getElementById('cp-pgto-section').style.display = tipo==='unico'  ?'block':'none';
-  // Atualiza texto do botão salvar
+  document.getElementById('cp-rec-wrap').style.display   = tipo==='recorrente'?'block':'none';
+  document.getElementById('cp-parc-wrap').style.display  = tipo==='parcelado' ?'block':'none';
+  document.getElementById('cp-pgto-section').style.display = tipo==='unico'   ?'block':'none';
   const btn2 = document.getElementById('cp-save-btn');
   if(tipo==='recorrente') btn2.textContent = '🔁 Criar Recorrências';
   else if(tipo==='parcelado') btn2.textContent = '🔢 Criar Parcelas';
@@ -2785,18 +2871,42 @@ function updateParcPreview(){
 const _origOpenCP = openCP;
 openCP = function(id){
   _origOpenCP(id);
-  // Edição: mostra só único (recorrente/parcelado não editam o grupo)
-  document.querySelectorAll('#seg-cp .sgb').forEach(b=>b.classList.remove('on'));
-  document.querySelector('#seg-cp .sgb[data-cp="unico"]').classList.add('on');
+  const c = id ? CP.find(x=>x.id===id) : null;
+
+  // Reset all cards to unselected
+  document.querySelectorAll('.cp-card').forEach(card=>{
+    card.style.border='2px solid var(--bd)';
+    card.style.background='var(--wh)';
+    const lbl=card.querySelector('div:nth-child(2)');
+    if(lbl) lbl.style.color='var(--g2)';
+  });
+  // Select "único" card
+  const unicoCard = document.querySelector('.cp-card[data-cp="unico"]');
+  if(unicoCard){
+    unicoCard.style.border='2px solid var(--or)';
+    unicoCard.style.background='var(--orl)';
+    const lbl=unicoCard.querySelector('div:nth-child(2)');
+    if(lbl) lbl.style.color='var(--ord)';
+  }
   document.getElementById('cp-tipo-lanc').value='unico';
   document.getElementById('cp-rec-wrap').style.display='none';
   document.getElementById('cp-parc-wrap').style.display='none';
   document.getElementById('cp-pgto-section').style.display='block';
   document.getElementById('cp-save-btn').textContent='Salvar';
-  // Esconde segmented control em edição
-  const seg = document.getElementById('seg-cp');
-  if(id && seg) seg.closest('div').style.display='none';
-  if(!id && seg) seg.closest('div').style.display='block';
+
+  // Load fornecedor
+  const fornEl = document.getElementById('cp-forn');
+  if(fornEl) fornEl.value = c?.fornecedor||'';
+
+  // Esconde tipo cards em edição (não permite mudar tipo)
+  const cards = document.getElementById('cp-tipo-cards');
+  if(cards){
+    if(id) cards.style.display='none';
+    else cards.style.display='grid';
+  }
+
+  // Update pgto badge if already has payment date
+  if(c?.data_pago) setTimeout(detectPgtoTipo, 50);
 };
 
 // Atualiza preview ao mudar data/valor
@@ -2823,8 +2933,10 @@ saveCP = function(){
     const grupoId = 'rec_'+Date.now();
     let count = 0;
     datas.forEach((d,i)=>{
+      const forn2=(document.getElementById('cp-forn')?.value||'').trim();
       CP.push({
         id:nid(CP)+i, data:d, descricao:desc, conta:cat, banco, valor:val,
+        fornecedor:forn2,
         pago:'', data_pago:'', tipo_pago:'', obs:'',
         grupo_id:grupoId, grupo_tipo:'recorrente',
         grupo_indice:i+1, grupo_total:datas.length
@@ -2856,10 +2968,12 @@ saveCP = function(){
     const datas = calcRecDatas(data, '1m', n);
     datas.forEach((d,i)=>{
       const valorParc = i===n-1 ? valUlt : valParc;
+      const forn3=(document.getElementById('cp-forn')?.value||'').trim();
       CP.push({
         id:nid(CP)+i, data:d,
         descricao:`${desc} (${i+1}/${n})`,
         conta:cat, banco, valor:valorParc,
+        fornecedor:forn3,
         pago:'', data_pago:'', tipo_pago:'', obs:'',
         grupo_id:grupoId, grupo_tipo:'parcelado',
         grupo_indice:i+1, grupo_total:n
@@ -2873,7 +2987,36 @@ saveCP = function(){
     return;
   }
 
-  // Único: chama o original
+  // Único: verifica se é edição de grupo
+  const editId = parseInt(document.getElementById('cpid').value)||0;
+  const editC  = editId ? CP.find(x=>x.id===editId) : null;
+  if(editC?.grupo_id){
+    const escolha = editarGrupo(editId);
+    if(!escolha){return} // cancelou
+    // Monta objeto de mudanças
+    const dataVenc = document.getElementById('cpd').value;
+    const val2     = parseFloat(document.getElementById('cpv').value)||0;
+    const desc2    = document.getElementById('cpde').value.trim();
+    const p2       = document.getElementById('cpck').checked;
+    const pd2      = document.getElementById('cppd').value;
+    const tp2      = p2&&pd2?(pd2>iso()?'ag':'pg'):'';
+    const changes  = {
+      descricao:desc2, valor:val2,
+      conta:document.getElementById('cpca').value,
+      banco:document.getElementById('cpba').value,
+      fornecedor:(document.getElementById('cp-forn')?.value||'').trim(),
+      obs:document.getElementById('cpob').value,
+      pago: p2?(tp2==='ag'?'agendado':'ok'):'',
+      data_pago: p2?pd2:'', tipo_pago:tp2
+    };
+    if(escolha==='1') Object.assign(editC, {...changes, data:editC.data});
+    else aplicarEdicaoGrupo(editId, changes, escolha);
+    closeM('m-cp');
+    scheduleAutoSave();
+    toast('Lançamento(s) atualizado(s)!','s');
+    rcp(); rfc();
+    return;
+  }
   _origSaveCP();
 };
 
@@ -3060,6 +3203,84 @@ document.addEventListener('DOMContentLoaded',()=>{
   const ft=document.querySelector('.sb-ft');
   if(ft)ft.innerHTML='v3.2 · Polo Caçapava · 2026<br><span style="font-size:10px;opacity:.5">Ctrl+N novo · Ctrl+S salvar · ESC fechar</span>';
 });
+
+function acFornCP(inp){
+  const q=inp.value.trim().toLowerCase();
+  const drop=document.getElementById('ac-drop-cp');
+  if(!drop) return;
+  const matches=FN.filter(f=>f.ativo==='Ok'&&(f.nome.toLowerCase().includes(q)||
+    (f.cnpj&&f.cnpj.includes(q)))).slice(0,8);
+  let h2='';
+  matches.forEach(f=>{
+    const hl=f.nome.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');
+    const pix=f.pix?`<span style="font-size:10px;color:var(--grn);margin-left:6px">PIX: ${f.pix}</span>`:'';
+    h2+=`<div onclick="selFornCP('${f.nome.replace(/'/g,"\\'")}')"
+      style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--g6)"
+      onmouseover="this.style.background='var(--g7)'" onmouseout="this.style.background=''">${hl}${pix}</div>`;
+  });
+  const exact=FN.find(f=>f.nome.toLowerCase()===q);
+  if(q.length>1&&!exact){
+    h2+=`<div onclick="addFornInlineCP('${inp.value.replace(/'/g,"\\'")}')"
+      style="padding:8px 12px;cursor:pointer;font-size:13px;color:var(--or);font-weight:600"
+      onmouseover="this.style.background='var(--orl)'" onmouseout="this.style.background=''">＋ Adicionar "${inp.value}" como novo fornecedor</div>`;
+  }
+  if(h2){drop.innerHTML=h2;drop.style.display='block'}
+  else drop.style.display='none';
+}
+
+function selFornCP(nome){
+  document.getElementById('cp-forn').value=nome;
+  document.getElementById('ac-drop-cp').style.display='none';
+  autoFillPix();
+}
+
+function addFornInlineCP(nome){
+  const novo={id:nid(FN),nome:nome.trim(),cnpj:'',ativo:'Ok',pix:''};
+  FN.push(novo);
+  document.getElementById('cp-forn').value=nome.trim();
+  document.getElementById('ac-drop-cp').style.display='none';
+  toast(`Fornecedor "${nome.trim()}" adicionado!`,'s');
+}
+
+// ── EDIÇÃO DE GRUPO (recorrente/parcelado) ────────────────────────────────────
+function editarGrupo(id){
+  const c = CP.find(x=>x.id===id);
+  if(!c?.grupo_id) return false; // não é grupo
+
+  const irmãos  = CP.filter(x=>x.grupo_id===c.grupo_id).sort((a,b)=>a.data.localeCompare(b.data));
+  const futuros = irmãos.filter(x=>x.data>=c.data&&(!x.pago||x.pago==='nan'||x.pago===''));
+  const tipo    = c.grupo_tipo==='recorrente'?'recorrente':'parcelado';
+
+  const opcoes = [
+    `1 — Editar só este lançamento (${D(c.data)})`,
+    `2 — Editar este e os próximos (${futuros.length} pendentes)`,
+    `3 — Editar todos do grupo (${irmãos.length} no total)`,
+  ].join('\n');
+
+  const escolha = prompt(`Este lançamento faz parte de um grupo ${tipo}.\nO que deseja editar?\n\n${opcoes}\n\nDigite 1, 2 ou 3:`);
+  return escolha; // retorna '1', '2', '3' ou null
+}
+
+function aplicarEdicaoGrupo(idOrigem, changes, escolha){
+  const c = CP.find(x=>x.id===idOrigem);
+  if(!c) return;
+  const irmãos   = CP.filter(x=>x.grupo_id===c.grupo_id).sort((a,b)=>a.data.localeCompare(b.data));
+  const futuros  = irmãos.filter(x=>x.data>=c.data&&(!x.pago||x.pago==='nan'||x.pago===''));
+  const targets  = escolha==='1'?[c]:escolha==='2'?futuros:irmãos;
+  targets.forEach((t,i)=>{
+    // Mantém data individual, atualiza o resto
+    Object.assign(t, {
+      ...changes,
+      data: t.data,          // preserva data de cada um
+      data_pago: t.data_pago, // preserva pagamento individual
+      pago: t.pago,
+      // Para parcelado, mantém sufixo da parcela
+      descricao: c.grupo_tipo==='parcelado'
+        ? changes.descricao.replace(/\s*\(\d+\/\d+\)$/,'')+` (${t.grupo_indice}/${t.grupo_total})`
+        : changes.descricao
+    });
+  });
+}
 
 </script>
 </body></html>
