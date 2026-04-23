@@ -205,7 +205,7 @@ input.field-error~.field-error-msg{display:block}
     <div class="sb-grp" style="padding:10px 0 2px">Relatórios</div>
     <button class="ni" onclick="go('rel',this)"><span class="ico">📄</span>Relatórios</button>
   </nav>
-  <div class="sb-ft">v3.1 · Polo Caçapava · 2026</div>
+  <div class="sb-ft">v3.2 · Polo Caçapava · 2026</div>
 </div>
 <!-- MAIN -->
 <div id="main">
@@ -2005,7 +2005,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <strong>Sistema atualizado!</strong> Seus dados foram preservados automaticamente
             (último salvamento: ${str}).
           </div>
-          <button onclick="this.closest('#restore-banner').style.display='none'"
+          <button onclick="document.getElementById('restore-banner').style.display='none'"
             style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:var(--grnd)">✕</button>`;
       } else {
         document.getElementById('restore-time').textContent = str;
@@ -2024,7 +2024,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   rcp();
   buildRules();
   initRuleHook();
-  updateSaveIndicator(!!savedAt);
+  updateSaveIndicator(!!saveInfo);
 });
 
 
