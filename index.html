@@ -1087,13 +1087,23 @@ function go(id,el){
 // ── DASHBOARD ────────────────────────────────────────────────────────────────
 function per(p){
   const h=h0(),now=iso();
-  let de;
+  const allDates=L.map(l=>l.data).sort();
+  const firstDate=allDates[0]||'2024-01-01';
+  const lastDate=allDates[allDates.length-1]||now;
+  let de,ate=now;
   if(p==='m'){const m=new Date(h.getFullYear(),h.getMonth(),1);de=m.toISOString().slice(0,10)}
   else if(p==='t'){const m=new Date(h);m.setMonth(h.getMonth()-3);de=m.toISOString().slice(0,10)}
   else if(p==='a'){de=h.getFullYear()+'-01-01'}
-  else{const ds=L.map(l=>l.data).sort();de=ds[0]||'2024-01-01'}
+  else{
+    // 'Tudo' — usa todo o intervalo dos dados reais
+    de=firstDate;
+    ate=lastDate>now?now:lastDate;
+  }
+  // Se o período selecionado não tem dados, expande para mostrar tudo
+  const temDados=L.some(l=>l.data>=de&&l.data<=ate);
+  if(!temDados){de=firstDate;ate=lastDate>now?now:lastDate;}
   document.getElementById('dd').value=de;
-  document.getElementById('da').value=now;
+  document.getElementById('da').value=ate;
   dash();
 }
 
@@ -1153,7 +1163,7 @@ function initDash(){
   const bar=document.getElementById('abar');
   bar.style.display=nc>0?'flex':'none';
   if(nc>0)document.getElementById('abar-tx').textContent=`🚨 ${nc} alertas precisam da sua atenção`;
-  per('a');
+  per('0'); // mostra todos os dados ao iniciar
 }
 
 // ── ALERTAS ──────────────────────────────────────────────────────────────────
